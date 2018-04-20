@@ -1,0 +1,31 @@
+# Scala
+# Inspired by https://github.com/github/gitignore/blob/master/Scala.gitignore
+*.class
+*.log
+
+# sbt specific
+# http://www.scala-sbt.org/release/docs/Getting-Started/Directories.html#configuring-version-control
+# Inspired by https://github.com/github/gitignore/blob/master/Global/SBT.gitignore
+.cache
+.history
+.lib/
+.idea/
+dist/*
+target/
+lib_managed/
+src_managed/
+project/boot/
+project/plugins/project/
+
+*~
+*.pyc
+sbt/*.jar
+project/*.lock
+
+.idea/
+.idea_modules/
+out/
+*.iml
+
+*swp
+
