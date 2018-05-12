@@ -12,3 +12,9 @@ trait SparkSessionWrapper {
       .getOrCreate()
   }
 }
+
+object sparkSessionBuilder extends SparkSessionWrapper {
+  def build(): SparkSession = {
+    spark
+  }
+}
