@@ -8,8 +8,6 @@ scalaVersion := "2.11.12"
 // set up spark
 sparkVersion := "2.2.0"
 
-//val sparkDependencyScope = "provided"
-
 sparkComponents ++= Seq("streaming", "sql")
 
 // Testing

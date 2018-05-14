@@ -1,6 +1,6 @@
 package com.github.xhanshawn.utils
 
-import com.github.xhanshawn.utils.PathUtils.CURPath
+import com.github.xhanshawn.reader.CURPath
 import org.scalatest.FunSpec
 
 class PathUtilsSpec extends FunSpec {
@@ -36,7 +36,7 @@ class PathUtilsSpec extends FunSpec {
     describe("rootPath") {
       val path = """s3://cur_bucket/this/is/a/very/long/cur/path/20180401-20180501/0d612072-8651-46db-a8ea-6ec42bd7fa1e/"""
       val curPath = PathUtils.parseCURPath(path)
-      assert(curPath.rootPath ==
+      assert(curPath.curDirectory ==
         "s3://cur_bucket/this/is/a/very/long/cur/path/20180401-20180501/0d612072-8651-46db-a8ea-6ec42bd7fa1e")
     }
   }
