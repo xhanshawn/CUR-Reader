@@ -10,6 +10,9 @@ scalaVersion := "2.11.12"
 // set up spark
 sparkVersion := "2.2.0"
 
+// add a JVM option to use when forking a JVM for 'run'
+javaOptions ++= Seq("-Xmx2G", "-Xms4G")
+
 spIgnoreProvided := true
 
 sparkComponents ++= Seq("streaming", "sql")
@@ -41,7 +44,24 @@ assemblyMergeStrategy in assembly := {
     oldStrategy(x)
 }
 
+initialCommands in console :=
+  s"""
+     |import com.github.xhanshawn.utils._
+     |import com.github.xhanshawn.reader._
+     |val spark = sparkSessionBuilder.build()
+     |val sc = spark.sparkContext
+     |val sqlContext = spark.sqlContext
+     |
+   """.stripMargin
+
+cleanupCommands in console :=
+  s"""
+     |spark.stop()
+   """.stripMargin
+
 // Generate a jar with version and good file name format.
 artifactName := { (sv: ScalaVersion, module: ModuleID, artifact: Artifact) =>
   artifact.name + "_" + sv.binary + "-" + sparkVersion.value + "_" + module.revision + "." + artifact.extension
 }
+
+assemblyJarName in assembly := s"${name.value}-${version.value}.${artifact.value.extension}"

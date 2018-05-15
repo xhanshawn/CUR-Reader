@@ -1,10 +1,12 @@
 package com.github.xhanshawn.reader
 
-import com.github.xhanshawn.utils.{CURPartLoader, ManifestLoader, PathUtils}
+import com.github.xhanshawn.utils.{CURPartLoader, Logger, ManifestLoader, PathUtils}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
-object CURReader {
+object CURReader extends Logger {
   def read(spark: SparkSession, paths: Seq[String], config: ReaderConfig = defaultConfig): DataFrame = {
+    configLogger(spark.sparkContext)
+
     readConfig(config)
 
     import spark.implicits._
