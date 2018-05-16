@@ -7,9 +7,6 @@ class ManifestLoaderSpec extends FunSpec with SparkSessionWrapper with S3Utils {
 
     it("") {
 
-
-
-      println("")
     }
   }
 }

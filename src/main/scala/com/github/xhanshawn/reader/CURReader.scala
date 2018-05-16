@@ -1,17 +1,16 @@
 package com.github.xhanshawn.reader
 
-import com.github.xhanshawn.utils.CURPartLoader.setHDFSConfig
 import com.github.xhanshawn.utils._
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 import scala.util.{Failure, Success, Try}
 
-object CURReader extends LoggerHelper with HDFSUtils {
+object CURReader extends LoggerHelper {
   def read(spark: SparkSession, paths: Seq[String], config: ReaderConfig = defaultConfig): DataFrame = {
     configLogger(spark.sparkContext)
 
     readConfig(config)
-    setHDFSConfig(spark)
+    HDFSUtils.setHDFSConfig(spark)
 
     import spark.implicits._
     val curPaths = spark.createDataset(paths).flatMap{ path => Seq(PathUtils.parseCURPath(path)) }
@@ -40,8 +39,8 @@ object CURReader extends LoggerHelper with HDFSUtils {
   }
 
   def clearTempFiles(spark: SparkSession): Unit = {
-    setHDFSConfig(spark)
-    deleteAllTempFiles() match {
+    HDFSUtils.setHDFSConfig(spark)
+    HDFSUtils.deleteAllTempFiles() match {
       case Success(true) => log.warn("Temp files are deleted.")
       case Success(false) => log.warn("Temp files are not deleted but no exception.")
       case Failure(ex) => throw ex

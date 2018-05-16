@@ -20,7 +20,6 @@ object CURPartLoader extends S3Utils {
   }
 
   def load(spark: SparkSession, curParts: Dataset[CURPart]): DataFrame = {
-    setHDFSConfig(spark)
     if (runningConfig.usingAWSAPI) {
       handleDownloadingError[DataFrame](downloadUsingAWSAPI(spark, curParts)) match {
         case Success(df) => df

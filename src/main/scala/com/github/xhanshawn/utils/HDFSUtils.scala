@@ -3,25 +3,31 @@ package com.github.xhanshawn.utils
 import java.io.{BufferedOutputStream, InputStream, OutputStream}
 import java.util.zip.GZIPOutputStream
 
+import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.spark.SparkConf
+import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.sql.SparkSession
 
 import scala.util.{Failure, Success, Try}
 
-trait HDFSUtils extends LoggerHelper {
+object HDFSUtils extends LoggerHelper with Serializable {
   final private val TEMP_DIR = "/tmp/cur-reader/curs/".intern()
-  private var fs: FileSystem = null
 
-  def setHDFSConfig(spark: SparkSession): Unit = fs match {
-    case null => {
-      val hadoopConf = spark.sparkContext.hadoopConfiguration
-      fs = FileSystem.get(hadoopConf)
+  private var sparkConf: SparkConf = null
+
+  def setHDFSConfig(spark: SparkSession): Unit = {
+    if (sparkConf == null) {
+      sparkConf = spark.sparkContext.getConf
+    } else {
+      log.debug("HDFS is already set up.")
     }
-    case _ => log.debug("HDFS System Conf is already set")
   }
 
   def createTempFile(filePath: String): OutputStream = {
-    new BufferedOutputStream(new GZIPOutputStream(fs.create(getTempFilePath(filePath))))
+    val hadoopConf = SparkHadoopUtil.get.newConfiguration(sparkConf)
+    val fileSys = FileSystem.get(hadoopConf)
+    new BufferedOutputStream(new GZIPOutputStream(fileSys.create(getTempFilePath(filePath))))
   }
 
   def getTempFilePath(fileName: String): Path = {
@@ -29,7 +35,9 @@ trait HDFSUtils extends LoggerHelper {
   }
 
   def fileExists(filePath: String): Boolean = {
-    fs.exists(getTempFilePath(filePath))
+    val hadoopConf = SparkHadoopUtil.get.newConfiguration(sparkConf)
+    val fileSys = FileSystem.get(hadoopConf)
+    fileSys.exists(getTempFilePath(filePath))
   }
 
   def copyToFile[O <: OutputStream](inputStream: InputStream, outputStream: O): Unit = {
@@ -40,7 +48,9 @@ trait HDFSUtils extends LoggerHelper {
 
   def deleteAllTempFiles(): Try[Boolean] = {
     try {
-      Success(fs.delete(new Path(TEMP_DIR), true))
+      val hadoopConf = SparkHadoopUtil.get.newConfiguration(sparkConf)
+      val fileSys = FileSystem.get(hadoopConf)
+      Success(fileSys.delete(new Path(TEMP_DIR), true))
     } catch {
       case ex: Throwable => {
         log.warn(s"Exception when deleting temp files: ${ex.getMessage}", ex)

@@ -4,10 +4,11 @@ import java.io.InputStream
 import java.util.zip.GZIPInputStream
 
 import com.amazonaws.services.s3.AmazonS3Client
+import org.apache.hadoop.fs.FileSystem
 
 import scala.io.Source
 
-trait S3Utils extends HDFSUtils {
+trait S3Utils extends LoggerHelper {
   lazy val s3 = new AmazonS3Client
 
   def readFromS3ByString(bucket: String, key: String): String = {
@@ -29,18 +30,15 @@ trait S3Utils extends HDFSUtils {
 
     /* TODO::Check local file meta data against S3 object meta data to decide if we should skip or not. */
     val localFilePath = ensureS3PathToFilePath(key)
-    if (skipIfFileExists(localFilePath)) {
+    if (HDFSUtils.fileExists(localFilePath)) {
       log.warn(s"Skip downloading: ${key}, because file: ${localFilePath}.")
-      return getTempFilePath(localFilePath).toString()
+      return HDFSUtils.getTempFilePath(localFilePath).toString()
     } else {
       val input = new GZIPInputStream(s3Object.getObjectContent: InputStream)
-      val output = createTempFile(localFilePath)
-      copyToFile(input, output)
-      getTempFilePath(localFilePath).toString()
+      val output = HDFSUtils.createTempFile(localFilePath)
+      HDFSUtils.copyToFile(input, output)
+      HDFSUtils.getTempFilePath(localFilePath).toString()
     }
   }
 
-  def skipIfFileExists(localFile: String): Boolean = {
-    fileExists(localFile)
-  }
 }
