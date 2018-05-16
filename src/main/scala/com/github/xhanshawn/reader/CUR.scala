@@ -18,5 +18,7 @@ case class CUR(curPath: CURPath, curManifest: CURManifest) {
   }
 
   val firstPart: Seq[CURPart] = curParts.filter(part => part.reportKey.contains(curManifest.firstPartName))
+  val numParts: Int = curParts.length
+
   var curRows: Dataset[CURRow] = null
 }

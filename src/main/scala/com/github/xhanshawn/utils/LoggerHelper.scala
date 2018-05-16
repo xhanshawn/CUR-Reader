@@ -3,7 +3,7 @@ package com.github.xhanshawn.utils
 import org.apache.log4j.{Level, LogManager, Logger}
 import org.apache.spark.SparkContext
 
-trait Logger {
+trait LoggerHelper {
   var previousLoggerLevel = Level.INFO
   lazy val log = LogManager.getRootLogger
 
