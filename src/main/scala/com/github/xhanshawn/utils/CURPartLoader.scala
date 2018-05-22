@@ -10,6 +10,7 @@ object CURPartLoader extends S3Utils {
 
   val MAX_PARTITION_SIZE = 4
 
+  @deprecated("Out of Memory issue", "0.1")
   def load(spark: SparkSession, curParts: Seq[CURPart]): DataFrame = {
     import spark.implicits._
     val linesDS = spark.sparkContext.parallelize(curParts).flatMap(part => readGZFromS3ByLine(part.bucket, part.reportKey)).toDS()
@@ -21,6 +22,7 @@ object CURPartLoader extends S3Utils {
 
   def load(spark: SparkSession, curParts: Dataset[CURPart]): DataFrame = {
     if (runningConfig.usingAWSAPI) {
+      HDFSUtils.clearTempFiles(spark)
       handleDownloadingError[DataFrame](downloadUsingAWSAPI(spark, curParts)) match {
         case Success(df) => df
         case Failure(ex) => throw ex

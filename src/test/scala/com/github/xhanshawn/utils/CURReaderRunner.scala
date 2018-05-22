@@ -7,7 +7,8 @@ object CURReaderRunner {
     val path = args(0)
     val spark = sparkSessionBuilder.build()
 //    val curs = CURReader.read(spark, List(path))
-    val curs = CURReader.read(spark, List(path), devConfig)
+    CURReader.config = devConfig
+    val curs = CURReader.read(spark, List(path))
     println()
   }
 }
