@@ -6,6 +6,7 @@ import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
 case class CUR(curPath: CURPath, curManifest: CURManifest) extends LoggerHelper {
 
   val isPathMatching: Boolean = (curPath.reportPrefix == curManifest.reportPrefix)
+  val useAWSAPI = curPath.useAWSAPI || runningConfig.usingAWSAPI
 
   val isFromS3 = curPath.fromS3
   val curParts: Seq[CURPart] = {
@@ -34,7 +35,7 @@ case class CUR(curPath: CURPath, curManifest: CURManifest) extends LoggerHelper 
       }
     import spark.implicits._
     val partsDS = spark.createDataset(parts)
-    curRowsDF = CURPartLoader.load(spark, partsDS)
+    curRowsDF = CURPartLoader.load(spark, partsDS, useAWSAPI)
     true
   }
 

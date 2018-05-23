@@ -8,20 +8,17 @@ import scala.util.{Failure, Success, Try}
 
 object CURPartLoader extends S3Utils {
 
-  val MAX_PARTITION_SIZE = 4
+  val MaxPartitionSize = 4
 
-  @deprecated("Out of Memory issue", "0.1")
-  def load(spark: SparkSession, curParts: Seq[CURPart]): DataFrame = {
-    import spark.implicits._
-    val linesDS = spark.sparkContext.parallelize(curParts).flatMap(part => readGZFromS3ByLine(part.bucket, part.reportKey)).toDS()
-    spark.read
-      .option("header", true)
-//      .option("inferSchema", true)
-      .csv(linesDS)
-  }
-
-  def load(spark: SparkSession, curParts: Dataset[CURPart]): DataFrame = {
-    if (runningConfig.usingAWSAPI) {
+  /**
+    * Loads a set of CURParts. Either using AWSAPI or HadoopAWS.
+    * @param spark
+    * @param curParts
+    * @param useAWSAPI Flag for using AWSAPI or not.
+    * @return          Dataframe of CUR files.
+    */
+  def load(spark: SparkSession, curParts: Dataset[CURPart], useAWSAPI: Boolean): DataFrame = {
+    if (useAWSAPI) {
       HDFSUtils.clearTempFiles(spark)
       handleDownloadingError[DataFrame](downloadUsingAWSAPI(spark, curParts)) match {
         case Success(df) => df
@@ -30,17 +27,12 @@ object CURPartLoader extends S3Utils {
     } else loadUsingHadoopAWS(spark, curParts)
   }
 
-  @deprecated("Out of Memory issue", "0.1")
-  def loadFromAWSAPI(spark: SparkSession, curParts: Dataset[CURPart]): DataFrame = {
-    import spark.implicits._
-    val linesDS = curParts
-      .repartition(MAX_PARTITION_SIZE)
-      .flatMap(part => readGZFromS3ByLine(part.bucket, part.reportKey))
-    spark.read
-      .option("header", true)
-      .csv(linesDS)
-  }
-
+  /**
+    * Load CUR parts using HadoopAWS library. CUR files will not be downloaded.
+    * @param spark
+    * @param curParts
+    * @return
+    */
   def loadUsingHadoopAWS(spark: SparkSession, curParts: Dataset[CURPart]): DataFrame = {
     import spark.implicits._
     val curPartPaths = curParts.map(_.fullPath).collect()
@@ -50,6 +42,12 @@ object CURPartLoader extends S3Utils {
       .csv(curPartPaths: _*)
   }
 
+  /**
+    * Downloads CUR files using AWS API. It actually downloads files to the temp dir of spark.
+    * @param spark
+    * @param curParts
+    * @return
+    */
   def downloadUsingAWSAPI(spark: SparkSession, curParts: Dataset[CURPart]): DataFrame = {
     import spark.implicits._
     val curPartPaths = curParts.map(_.fullPath).collect()
@@ -61,6 +59,32 @@ object CURPartLoader extends S3Utils {
       .csv(filePaths: _*)
   }
 
+  /**
+    * Handles the downloading errors run inside the method.
+    *
+    * @param f  Downloading function is supposed to run.
+    * @tparam T Result type.
+    * @return
+    */
+  def handleDownloadingError[T](f: => T): Try[T] = {
+    try {
+      val df = f
+      Success(df)
+    } catch {
+      case ex: Throwable => {
+        log.warn(s"Error when downloading CURs: ${ex.getMessage}")
+        log.warn(ex.getStackTrace)
+        return Failure(ex)
+      }
+    }
+  }
+
+  /**
+    * Not being used. It was an attempt to use parallelize() to download files in parallel.
+    * @param spark
+    * @param curParts
+    * @return
+    */
   def downloadUsingAWSAPIUsingRDD(spark: SparkSession, curParts: Dataset[CURPart]): DataFrame = {
     val parts = curParts.collect()
     val totalNumOfParts = parts.length
@@ -72,16 +96,23 @@ object CURPartLoader extends S3Utils {
       .csv(filePaths: _*)
   }
 
-  def handleDownloadingError[C](f: => C): Try[C] = {
-    try {
-      val df = f
-      Success(df)
-    } catch {
-      case ex: Throwable => {
-        log.warn(s"Error when downloading CURs: ${ex.getMessage}")
-        log.warn(ex.getStackTrace)
-        return Failure(ex)
-      }
-    }
+  @deprecated("Out of Memory issue", "0.1")
+  def load(spark: SparkSession, curParts: Seq[CURPart]): DataFrame = {
+    import spark.implicits._
+    val linesDS = spark.sparkContext.parallelize(curParts).flatMap(part => readGZFromS3ByLine(part.bucket, part.reportKey)).toDS()
+    spark.read
+      .option("header", true)
+      .csv(linesDS)
+  }
+
+  @deprecated("Out of Memory issue", "0.1")
+  def loadFromAWSAPI(spark: SparkSession, curParts: Dataset[CURPart]): DataFrame = {
+    import spark.implicits._
+    val linesDS = curParts
+      .repartition(MaxPartitionSize)
+      .flatMap(part => readGZFromS3ByLine(part.bucket, part.reportKey))
+    spark.read
+      .option("header", true)
+      .csv(linesDS)
   }
 }

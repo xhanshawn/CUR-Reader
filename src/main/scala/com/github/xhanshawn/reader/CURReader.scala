@@ -40,7 +40,6 @@ object CURReader extends LoggerHelper {
     curs
   }
 
-
   def read(spark: SparkSession, path: String): CUR = {
     val curs = read(spark, List(path))
     if(curs.length == 1) curs(0)
