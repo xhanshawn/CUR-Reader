@@ -18,7 +18,8 @@ spIgnoreProvided := true
 sparkComponents ++= Seq("streaming", "sql")
 
 // Testing
-libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.4" % "test"
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.4" % "test"
+libraryDependencies += "org.scalamock" %% "scalamock" % "4.1.0" % "test"
 
 libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.12.2" % "test"
 

@@ -17,9 +17,8 @@ object CURReader extends LoggerHelper {
       * It is easy to blow up if we don't do this before each load.
       */
     clearTempFiles(spark)
-
     import spark.implicits._
-    val curPaths = spark.createDataset(paths).flatMap{ path => Seq(PathUtils.parseCURPath(path)) }
+    val curPaths = spark.createDataset(paths.flatMap{ path => Seq(PathUtils.parseCURPath(path)) })
     if(curPaths.count() > 1 && runningConfig.usingAWSAPI) {
       log.warn(
         """Loading CUR using AWS API requires downloading CUR files. Temp CUR files will not be retained

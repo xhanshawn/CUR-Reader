@@ -6,10 +6,15 @@ import com.github.xhanshawn.utils.PathUtils.{FileSysType}
 
 case class CURPath(sys: String, reportPath: String, monthSpan: String, assemblyId: String, reportName: String) extends Serializable with FileSysType {
 
+  /* Manifest file name */
   val manifest = if(hasManifest) s"$reportName-Manifest.json" else null
   val sysType = getSysType(sys)
+
+  /* Full CUR directory till assmebly id */
   val curDirectory: String = s"${sysType.root}$reportPath/$monthSpan/$assemblyId"
   val fromS3: Boolean = (S3Systems.contains(sysType))
+
+  /* true if this CUR path needs to use AWS API. */
   val useAWSAPI: Boolean = {
     if (fromS3) reportPrefix.split("/").contains("")
     else false
@@ -26,6 +31,8 @@ case class CURPath(sys: String, reportPath: String, monthSpan: String, assemblyI
     }
   }
 
+  def hasAssemblyId: Boolean = assemblyId != null
+
   val bucket: String = {
     if (fromS3) {
       val index = reportPath.indexOf("/")
@@ -41,5 +48,5 @@ case class CURPath(sys: String, reportPath: String, monthSpan: String, assemblyI
     reportPath.substring(index + 1)
   }
 
-  def prefix: String = s"$reportPrefix/$monthSpan/$assemblyId"
+  def prefix: String = if (hasAssemblyId) s"$reportPrefix/$monthSpan/$assemblyId" else s"$reportPrefix/$monthSpan"
 }

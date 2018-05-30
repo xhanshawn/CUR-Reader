@@ -43,6 +43,7 @@ object HDFSUtils extends LoggerHelper with Serializable {
   def copyToFile[O <: OutputStream](inputStream: InputStream, outputStream: O): Unit = {
     val buffer = new Array[Byte](65536)
     Stream.continually(inputStream.read(buffer)).takeWhile(_ != -1).foreach(outputStream.write(buffer, 0, _))
+    inputStream.close()
     outputStream.close()
   }
 

@@ -14,7 +14,11 @@ case class CUR(curPath: CURPath, curManifest: CURManifest) extends LoggerHelper 
     else curManifest.reportKeys.map {
       key => {
         val name = key.split("/").last
-        CURPart(curPath.sysType.root, curPath.bucket, s"${curPath.prefix}/${name}")
+        if (curPath.hasAssemblyId) {
+          CURPart(curPath.sysType.root, curPath.bucket, s"${curPath.prefix}/${name}")
+        } else {
+          CURPart(curPath.sysType.root, curPath.bucket, s"${curPath.prefix}/${curManifest.assemblyId}/${name}")
+        }
       }
     }
   }

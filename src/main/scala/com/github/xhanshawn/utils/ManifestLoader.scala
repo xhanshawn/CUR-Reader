@@ -6,8 +6,9 @@ import org.apache.spark.sql.functions.{struct, to_timestamp}
 
 object ManifestLoader extends S3Utils {
   def load(spark: SparkSession, curPaths: Dataset[CURPath]): Dataset[CURManifest] = {
-    if (runningConfig.usingAWSAPI) loadFromAWSAPI(spark, curPaths)
-    else loadFromS3URL(spark, curPaths)
+    if (curPaths.filter(_.useAWSAPI).count() > 0) {
+      loadFromAWSAPI(spark, curPaths)
+    } else loadFromS3URL(spark, curPaths)
   }
 
   def loadFromS3URL(spark: SparkSession, curPaths: Dataset[CURPath]): Dataset[CURManifest] = {
@@ -20,11 +21,12 @@ object ManifestLoader extends S3Utils {
   def loadFromAWSAPI(spark: SparkSession, curPaths: Dataset[CURPath]): Dataset[CURManifest] = {
     import spark.implicits._
     val validPaths = curPaths.filter(_.fromS3)
-    val jsonDS = curPaths.map(path => readFromS3ByString(path.bucket, path.manifestKey))
+    val jsonDS = validPaths.repartition(validPaths.count().toInt).map(path => readFromS3ByString(path.bucket, path.manifestKey))
     val df = spark.read.json(jsonDS)
     toCURManifests(spark, df)
   }
 
+  @deprecated("", "0.1")
   def loadFromAWSAPI(spark: SparkSession, bucket: String, keys: Seq[String]): Dataset[CURManifest] = {
     import spark.implicits._
     val jsonDS = spark.createDataset(keys).map(readFromS3ByString(bucket, _))

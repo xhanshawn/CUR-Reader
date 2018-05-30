@@ -88,6 +88,10 @@ object CURPartLoader extends S3Utils {
   def downloadUsingAWSAPIUsingRDD(spark: SparkSession, curParts: Dataset[CURPart]): DataFrame = {
     val parts = curParts.collect()
     val totalNumOfParts = parts.length
+    log.warn(
+      s"""You are downloading ${totalNumOfParts} CUR files. It may need ${totalNumOfParts * 100 / 1024} GB HDFS
+         | disk space. Job will fail if disk space is not big enough.
+         | You can clean the files in the HDFS tmp folder. """.stripMargin)
     val sc = spark.sparkContext
     val filePaths = sc.parallelize(parts, totalNumOfParts)
       .map(part => downloadGZFromS3(part.bucket, part.reportKey)).collect()
