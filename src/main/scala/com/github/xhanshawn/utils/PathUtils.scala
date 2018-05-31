@@ -53,7 +53,7 @@ object PathUtils extends S3Utils {
         val curPath = CURPath(sys, reportPath, monthSpan, null, null)
         findCURManifest(curPath)
       }
-      case CURRootPathRegex(sys, reportPath, monthSpan, assemblyId,  "") => {
+      case CURRootPathRegex(sys, reportPath, monthSpan, assemblyId,  "/") => {
         val curPath = CURPath(sys, reportPath, monthSpan, assemblyId, null)
         findCURManifest(curPath)
       }
@@ -92,7 +92,10 @@ object PathUtils extends S3Utils {
   }
 
   def findManifestFromPaths(paths: Seq[String], curPath: CURPath): Seq[CURPath] = {
-    val manifests = if (curPath.hasAssemblyId) paths.filter(objIsManifest) else paths.filter(isRootManifest)
+    val manifests = if (curPath.hasAssemblyId)
+      paths.filter(objIsManifest).filterNot(isRootManifest)
+    else
+      paths.filter(isRootManifest)
     manifests.map(getRootManifestCURPath(_, curPath)).filter(_ != null)
   }
 
