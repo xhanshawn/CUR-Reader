@@ -41,7 +41,7 @@ case class CURPath(sys: String, reportPath: String, monthSpan: String, assemblyI
   }
 
   def manifestKey: String = runIfManifest(getManifestKey)
-  private def getManifestKey: String = Paths.get(prefix, manifest).toString()
+  private def getManifestKey: String = s"$prefix/$manifest"
 
   def reportPrefix: String = {
     val index = reportPath.indexOf("/")

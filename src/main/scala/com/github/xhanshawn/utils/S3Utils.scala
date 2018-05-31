@@ -5,6 +5,7 @@ import java.util.zip.GZIPInputStream
 
 import com.amazonaws.services.s3.AmazonS3Client
 import com.amazonaws.services.s3.model.{AmazonS3Exception, ListObjectsRequest, ObjectListing, S3ObjectSummary}
+import com.github.xhanshawn.utils.ManifestLoader.log
 
 import scala.annotation.tailrec
 import scala.io.Source
@@ -19,7 +20,15 @@ trait S3Utils extends LoggerHelper {
     * @return
     */
   def readFromS3ByString(bucket: String, key: String): String = {
-    Source.fromInputStream(s3.getObject(bucket, key).getObjectContent: InputStream).mkString
+    try {
+      Source.fromInputStream(s3.getObject(bucket, key).getObjectContent: InputStream).mkString
+    } catch {
+      case ex: Exception => {
+        log.warn(s"Error: loading manifest: ${ex.getMessage()}")
+        log.warn(s"bucket: $bucket, key: $key")
+        null
+      }
+    }
   }
 
   @deprecated("Out of Memory issue", "0.1")
