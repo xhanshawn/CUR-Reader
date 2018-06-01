@@ -14,6 +14,7 @@ object ManifestLoader extends S3Utils {
   def loadFromS3URL(spark: SparkSession, curPaths: Dataset[CURPath]): Dataset[CURManifest] = {
     import spark.implicits._
     val fullPaths = curPaths.map(path => path.manifestPath).collect()
+    log.warn(s"loading Manifests: ${fullPaths.mkString(",")}")
     val df = spark.read.json(fullPaths: _*)
     toCURManifests(spark, df)
   }

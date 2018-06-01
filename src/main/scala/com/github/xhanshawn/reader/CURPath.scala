@@ -11,7 +11,11 @@ case class CURPath(sys: String, reportPath: String, monthSpan: String, assemblyI
   val sysType = getSysType(sys)
 
   /* Full CUR directory till assmebly id */
-  val curDirectory: String = s"${sysType.root}$reportPath/$monthSpan/$assemblyId"
+  val curDirectory: String = if (hasAssemblyId)
+      s"${sysType.root}$reportPath/$monthSpan/$assemblyId"
+    else
+      s"${sysType.root}$reportPath/$monthSpan"
+
   val fromS3: Boolean = (S3Systems.contains(sysType))
 
   /* true if this CUR path needs to use AWS API. */
@@ -21,7 +25,7 @@ case class CURPath(sys: String, reportPath: String, monthSpan: String, assemblyI
   }
 
   def manifestPath: String = runIfManifest(getManifestPath)
-  private def getManifestPath: String = Paths.get(curDirectory, manifest).toString()
+  private def getManifestPath: String = s"$curDirectory/$manifest"
 
   def hasManifest: Boolean = reportName != null
   def runIfManifest[T](f: => T): T = {
