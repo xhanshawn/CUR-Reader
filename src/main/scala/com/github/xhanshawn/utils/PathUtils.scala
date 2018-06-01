@@ -57,6 +57,9 @@ object PathUtils extends S3Utils {
         val curPath = CURPath(sys, reportPath, monthSpan, assemblyId, null)
         findCURManifest(curPath)
       }
+      case RootManifestRegex(sys, reportPath, monthSpan, reportName) => {
+        CURPath(sys, reportPath, monthSpan, null, reportName)
+      }
       case CURManifestRegex(sys, reportPath, monthSpan, assemblyId, reportName) => {
         CURPath(sys, reportPath, monthSpan, assemblyId, reportName)
       }
