@@ -15,7 +15,9 @@ object ManifestLoader extends S3Utils {
     import spark.implicits._
     val fullPaths = curPaths.map(path => path.manifestPath).collect()
     log.warn(s"loading Manifests: ${fullPaths.mkString(",")}")
-    val df = spark.read.json(fullPaths: _*)
+    val df = spark.read
+              .option("multiLine", "true")
+              .json(fullPaths: _*)
     toCURManifests(spark, df)
   }
 
