@@ -15,13 +15,25 @@ Load a CUR from S3.
 scala> import com.github.xhanshawn.reader._
 // utils package makes you access reader configurations and some helpers. 
 scala> import com.github.xhanshawn.utils._
-scala> val path = "s3a://bucket/path/to/you/cur/20180201-20180301/"
+scala> val path = "s3n://bucket/path/to/you/cur/20180201-20180301/"
 // This is an object of class CUR consist of information for CUR manifest and CUR rows.
 scala> val cur = CURReader.read(spark, path)
 scala> val rows = cur.curRows // Dataframe for the CUR rows.
 scala> rows.printSchema()
 ```
 
+#### Path format
+You can choose to give the reader a very specific CUR path. If you give it a directory of multiple CURs, it wlll try to
+find the lastest or ROOT curs. The following are acceptable CUR paths:
+
+```
+"s3n://bucket/path/to/you/cur/20180201-20180301/"
+"s3n://bucket/path/to/you/cur/20180201-20180301/abcd-assembly-id/"
+"s3n://bucket/path/to/you/cur/20180201-20180301/abcd-assembly-id/report-Manifest.json"
+"s3a://bucket/path/to/you/cur/20180201-20180301/abcd-assembly-id/report-Manifest.json"
+"s3://bucket/path/to/you/cur/20180201-20180301/abcd-assembly-id/report-Manifest.json"
+"s3://bucket/path/to//you/cur/20180201-20180301/abcd-assembly-id/report-Manifest.json"
+```
 ### Configration
 
 #### How to load
