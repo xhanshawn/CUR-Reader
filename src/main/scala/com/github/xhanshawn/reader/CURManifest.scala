@@ -28,12 +28,13 @@ case class CURManifest(assemblyId: String,
 }
 
 case class CURPart(sysRoot: String, bucket: String, reportKey: String) {
-  val fullPath = s"$sysRoot$bucket/$reportKey"
+  val fullPath: String = s"$sysRoot$bucket/$reportKey"
 }
 
 case class CURColumn(category: String, name: String) {
   val fullName: String = s"$category/$name"
 }
+
 case class BillingPeriod(start: Timestamp, end: Timestamp)
 case class FormatData(charset: String, compression: String, contentType: String) {
   val extension: String = {
