@@ -78,7 +78,7 @@ trait S3Utils extends LoggerHelper {
       val sums = prevSums ++ listResult.getObjectSummaries
       listResult.getNextMarker() match {
         case null => sums
-        case marker: String => listPerMarker(nextMarker, sums)
+        case marker: String => listPerMarker(marker, sums)
       }
     }
     listPerMarker(null, List())

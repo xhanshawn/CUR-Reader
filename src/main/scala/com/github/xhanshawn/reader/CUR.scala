@@ -1,9 +1,10 @@
 package com.github.xhanshawn.reader
 
-import com.github.xhanshawn.utils.{CURPartLoader, LoggerHelper}
-import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
+import com.github.xhanshawn.utils.{CURPartLoader, CURQueryUtils, LoggerHelper}
+import org.apache.log4j.Logger
+import org.apache.spark.sql._
 
-case class CUR(curPath: CURPath, curManifest: CURManifest) extends LoggerHelper {
+case class CUR(curPath: CURPath, curManifest: CURManifest) extends LoggerHelper with CURQueryUtils {
 
   val isPathMatching: Boolean = (curPath.reportPrefix == curManifest.reportPrefix)
   val useAWSAPI = curPath.useAWSAPI || runningConfig.usingAWSAPI
@@ -43,7 +44,17 @@ case class CUR(curPath: CURPath, curManifest: CURManifest) extends LoggerHelper 
     true
   }
 
-  def curRows: DataFrame = {
+  override def curRows: DataFrame = {
     curRowsDF
+  }
+  override def where(condition: String): CUR = {
+    log.info(s"added where clause ${condition}")
+    tmpDF.where(condition)
+    this
+  }
+  override def select(cols: String*): CUR = {
+    log.info(s"added select clause ${cols.mkString(", ")}")
+    tmpCURDF = tmpDF.select(cols.head, cols.tail :_*)
+    this
   }
 }
