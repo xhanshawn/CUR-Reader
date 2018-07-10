@@ -41,14 +41,6 @@ trait CURQueryUtils extends LoggerHelper {
   def curRows: DataFrame
   def where(condition: String): CUR
   def select(cols: String*): CUR
-  protected var tmpCURDF: DataFrame = null
-  def tmpDF: DataFrame = {
-    if (tmpCURDF == null) tmpCURDF = curRows
-    tmpCURDF
-  }
-  def toCURDF(): DataFrame = {
-    tmpDF
-  }
 
   def printRows(rows: Seq[Row], df: DataFrame): Unit = {
     val cols = df.columns
@@ -72,10 +64,10 @@ trait CURQueryUtils extends LoggerHelper {
   }
 
   def printRows(rows: Seq[Row]): Unit = {
-    printRows(rows, tmpDF)
+    printRows(rows, curRows)
   }
 
-  def printRows(df: DataFrame = tmpDF): Unit = {
+  def printRows(df: DataFrame = curRows): Unit = {
     log.warn("Printing out rows from DataFrame query. It can take a long time.")
     printRows(df.collect(), df)
   }
@@ -117,12 +109,12 @@ trait CURQueryUtils extends LoggerHelper {
     if (partitionNum == 1) {
       val tempFile = HDFSUtils.getTempFilePath(TempDFFileName).toString
       HDFSUtils.clearTempFile(tempFile)
-      toCURDF().write.parquet(tempFile)
+      curRows.write.parquet(tempFile)
       val spark = sparkSessionBuilder.build()
       val df = spark.read.parquet(tempFile)
       df.repartition(partitionNum).write
     } else {
-      toCURDF().repartition(partitionNum).write
+      curRows.repartition(partitionNum).write
     }
   }
 

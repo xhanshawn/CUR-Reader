@@ -28,10 +28,12 @@ object CURReader extends LoggerHelper {
 
     val manifests = ManifestLoader.load(spark, curPaths)
 
-    val curs = manifests.joinWith(curPaths, manifests.col("reportName") === curPaths.col("reportName"))
-                        .withColumnRenamed("_1", "curManifest")
-                        .withColumnRenamed("_2", "curPath")
-                        .as[CUR].collect()
+
+    val pathsWithManifests = manifests.joinWith(curPaths, manifests.col("reportName") === curPaths.col("reportName")).collect()
+    val curs = pathsWithManifests.map {
+      case (manifest, path) => CUR(path, manifest, null)
+      case _ => null
+    }
 
     val totalNumOfParts = curs.map(_.numParts).foldLeft(0)(_ + _)
     println(s"Total num of cur parts: $totalNumOfParts ")
