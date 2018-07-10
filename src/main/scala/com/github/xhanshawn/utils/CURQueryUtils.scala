@@ -96,7 +96,7 @@ trait CURQueryUtils extends LoggerHelper {
   }
 
   def ec2 = where("`lineItem/ProductCode` = 'AmazonEC2'")
-  def ri = where("`reservation/ReservationARN` != null")
+  def ri = where("`reservation/ReservationARN` IS NOT null OR `reservation/ReservationARN` <> ''")
   def summary = where("`lineItem/LineItemType` = 'RIFee'")
   def riCols = select(RIColumns: _*)
   def riCostCols: CUR = {
