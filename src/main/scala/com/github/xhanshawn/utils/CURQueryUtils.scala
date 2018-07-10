@@ -107,16 +107,24 @@ trait CURQueryUtils extends LoggerHelper {
   def ri = where("`reservation/ReservationARN` != null")
   def summary = where("`lineItem/LineItemType` = 'RIFee'")
   def riCols = select(RIColumns: _*)
+  def riCostCols: CUR = {
+    val cols = List(RICoreColumns, RICostColumns).flatten.distinct
+    select(cols: _*)
+  }
 
   val TempDFFileName = "tmp-df-file"
-  def write(spark: SparkSession, partitionNum: Int = 1): DataFrameWriter[Row] = {
-    val tempFile = HDFSUtils.getTempFilePath(TempDFFileName).toString
-    toCURDF().write.parquet(tempFile)
-    val df = spark.read.parquet(tempFile)
-    df.repartition(partitionNum).write
+  def write(partitionNum: Int = 1): DataFrameWriter[Row] = {
+    if (partitionNum == 1) {
+      val tempFile = HDFSUtils.getTempFilePath(TempDFFileName).toString
+      HDFSUtils.clearTempFile(tempFile)
+      toCURDF().write.parquet(tempFile)
+      val spark = sparkSessionBuilder.build()
+      val df = spark.read.parquet(tempFile)
+      df.repartition(partitionNum).write
+    } else {
+      toCURDF().repartition(partitionNum).write
+    }
   }
 
-  def write(partitionNum: Int): DataFrameWriter[Row] = {
-    toCURDF().repartition(partitionNum).write
-  }
+  def write: DataFrameWriter[Row] = write(1)
 }

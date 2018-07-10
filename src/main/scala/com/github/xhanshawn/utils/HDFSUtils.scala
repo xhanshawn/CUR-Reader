@@ -3,7 +3,6 @@ package com.github.xhanshawn.utils
 import java.io.{BufferedOutputStream, InputStream, OutputStream}
 import java.util.zip.GZIPOutputStream
 
-import com.github.xhanshawn.reader.CURReader.log
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.SparkConf
 import org.apache.spark.deploy.SparkHadoopUtil
@@ -48,23 +47,33 @@ object HDFSUtils extends LoggerHelper with Serializable {
   }
 
   def deleteAllTempFiles(): Try[Boolean] = {
+    clearTempFile(TempDir)
+  }
+
+  def clearTempFiles(spark: SparkSession = null): Unit = {
+    HDFSUtils.setHDFSConfig(spark)
+    HDFSUtils.deleteAllTempFiles() match {
+      case Success(_) => log.warn("Temp files are deleted.")
+      case Failure(ex) => throw ex
+    }
+  }
+
+  def clearTempFile(file: String, spark: SparkSession = null): Try[Boolean] = {
+    if (spark == null) {
+      if (sparkConf == null) throw new RuntimeException("HDFS Config is not set. File is not going to be cleaned.")
+    } else {
+      setHDFSConfig(spark)
+    }
+
     try {
       val hadoopConf = SparkHadoopUtil.get.newConfiguration(sparkConf)
       val fileSys = FileSystem.get(hadoopConf)
-      Success(fileSys.delete(new Path(TempDir), true))
+      Success(fileSys.delete(new Path(file), true))
     } catch {
       case ex: Throwable => {
         log.warn(s"Exception when deleting temp files: ${ex.getMessage}", ex)
         Failure(ex)
       }
-    }
-  }
-
-  def clearTempFiles(spark: SparkSession): Unit = {
-    HDFSUtils.setHDFSConfig(spark)
-    HDFSUtils.deleteAllTempFiles() match {
-      case Success(_) => log.warn("Temp files are deleted.")
-      case Failure(ex) => throw ex
     }
   }
 }
