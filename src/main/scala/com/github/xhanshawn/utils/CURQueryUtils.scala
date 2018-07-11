@@ -2,6 +2,7 @@ package com.github.xhanshawn.utils
 
 import com.github.xhanshawn.reader.CUR
 import org.apache.spark.sql._
+import org.apache.spark.sql.expressions.UserDefinedFunction
 import org.apache.spark.sql.functions._
 
 trait CURQueryUtils extends LoggerHelper {
@@ -59,9 +60,8 @@ trait CURQueryUtils extends LoggerHelper {
     val df = curRows.select(cols.head, cols.tail :_*)
     initWithDF(df)
   }
-  def mergeCols(str: String, cols: String*): CUR = {
-    val merge = udf((cols: Any*) => cols.mkString(":"))
-    val df = curRows.withColumn(str, merge(cols.map(col): _*))
+  def withColumn(str: String, column: Column): CUR = {
+    val df = curRows.withColumn(str, column)
     initWithDF(df)
   }
   def aggAfterGroupBy(aggExp: Column, groupCols: String*): CUR = {
@@ -177,6 +177,17 @@ trait CURQueryUtils extends LoggerHelper {
   }
   def write: DataFrameWriter[Row] = write(1)
 
-  def withAnalysisPoint: CUR = mergeCols("analysisPoint", "product/instanceType", "product/region", "product/tenancy", "product/operatingSystem")
+  def withAnalysisPoint: CUR = {
+    val composeAnalysisPoint = udf((instType: String,
+                                    region: String,
+                                    tenancy: String,
+                                    os: String) => Array(instType, region, tenancy, os).mkString(":"))
+    withColumn("analysisPoint", composeAnalysisPoint(
+      col("product/instanceType"),
+      col("product/region"),
+      col("product/tenancy"),
+      col("product/operatingSystem")))
+  }
+
   def amortCostPerAnalysisPoint: CUR = withAnalysisPoint.aggAfterGroupBy(sum("reservation/AmortizedUpfrontCostForUsage"), "analysisPoint")
 }
