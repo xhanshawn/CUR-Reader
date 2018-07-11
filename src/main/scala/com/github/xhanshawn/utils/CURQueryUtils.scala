@@ -1,9 +1,13 @@
 package com.github.xhanshawn.utils
 
 import com.github.xhanshawn.reader.CUR
-import org.apache.spark.sql.{DataFrame, DataFrameWriter, Row, SparkSession}
+import org.apache.spark.sql._
+import org.apache.spark.sql.functions._
 
 trait CURQueryUtils extends LoggerHelper {
+  /**
+    * Contants for common used CUR columns.
+    */
   val RICoreColumns = List(
     "reservation/ReservationARN",
     "reservation/ModificationStatus",
@@ -31,20 +35,48 @@ trait CURQueryUtils extends LoggerHelper {
     "reservation/UnusedAmortizedUpfrontFeeForBillingPeriod",
     "reservation/UpfrontValue"
   )
-
   val RIColumns = List(
     RICoreColumns,
     RICostColumns,
     UnusedRIColumns,
     AmortizationColumns).flatten.distinct
 
+  /**
+    * Abstract methods to support DataFrame query chaining over CUR case class.
+    */
   def curRows: DataFrame
-  def where(condition: String): CUR
-  def select(cols: String*): CUR
+  def initWithDF(df: DataFrame): CUR
+  def where(condition: String): CUR = {
+    log.info(s"added where clause ${condition}")
+    initWithDF(curRows.where(condition))
+  }
+  def where(condition: Column): CUR = {
+    log.info(s"added where clause ${condition}")
+    initWithDF(curRows.where(condition))
+  }
+  def select(cols: String*): CUR = {
+    log.info(s"added select clause ${cols.mkString(", ")}")
+    val df = curRows.select(cols.head, cols.tail :_*)
+    initWithDF(df)
+  }
+  def mergeCols(str: String, cols: String*): CUR = {
+    val merge = udf((cols: Any*) => cols.mkString(":"))
+    val df = curRows.withColumn(str, merge(cols.map(col): _*))
+    initWithDF(df)
+  }
+  def aggAfterGroupBy(aggExp: Column, groupCols: String*): CUR = {
+    val df = curRows.groupBy(groupCols.map(col): _*).agg(aggExp)
+    initWithDF(df)
+  }
 
+  /**
+    * Print Spark Sql rows passed in. If the column num is small, we try to print it horizontally.
+    * However if there are many columns, it will print rows vertically.
+    * @param rows A Sequence of Spark Sql rows
+    * @param df   DataFrame that provides the column definitions.
+    */
   def printRows(rows: Seq[Row], df: DataFrame): Unit = {
     val cols = df.columns
-
 
     if (cols.length <= 10) {
       /* print horizontally */
@@ -63,47 +95,73 @@ trait CURQueryUtils extends LoggerHelper {
     }
   }
 
-  def printRows(rows: Seq[Row]): Unit = {
-    printRows(rows, curRows)
-  }
-
+  /**
+    * print Spark Sql rows with member variable curRows.
+    * @param df
+    */
   def printRows(df: DataFrame = curRows): Unit = {
     log.warn("Printing out rows from DataFrame query. It can take a long time.")
     printRows(df.collect(), df)
   }
 
-  def rowsToSeq(rows: Seq[Row]): Seq[Seq[String]] = {
-    if (rows.isEmpty) return Seq(Seq())
-    for {
-      row <- rows
-      seq = row.toSeq.map {
-        case null => "null"
-        case x => x.toString
-      }
-    } yield seq.toList
-  }
+  /**
+    * Predefined query helpers including service, line item type, etc.
+    */
 
-  def formatRows(rows: Seq[Seq[String]]): Seq[Seq[String]] = {
-    val fomattedRotatedRows = rotate(rows).map { row =>
-      val maxLength = row.map(_.length).reduceLeft(_ max _)
-      row.map(_.padTo(maxLength, " ").mkString)
-    }
-    rotate(fomattedRotatedRows)
-  }
+  /**
+    * Helpers to query CUR rows by services.
+    */
+  def prodIs(prodName: String) = where(s"`lineItem/ProductCode` = '$prodName'")
+  def ec2 = prodIs("AmazonEC2")
+  def rds = prodIs("AmazonRDS")
 
-  def rotate(rows: Seq[Seq[String]]): Seq[Seq[String]] = {
-    rows.head.indices.map(i => rows.map(_(i)))
-  }
-
-  def ec2 = where("`lineItem/ProductCode` = 'AmazonEC2'")
+  /**
+    * Helpers to query CUR rows by reservation types.
+    */
   def ri = where("`reservation/ReservationARN` IS NOT null OR `reservation/ReservationARN` <> ''")
-  def summary = where("`lineItem/LineItemType` = 'RIFee'")
+  def od = where("`reservation/ReservationARN` IS null OR `reservation/ReservationARN` = ''")
+  def allUpfront = where(
+    """
+      |(`pricing/PurchaseOption` IS NOT NULL AND `pricing/PurchaseOption` = 'All Upfront') OR
+      |(`reservation/UpfrontValue` IS NOT null AND `reservation/UpfrontValue` > 0 AND `RecurringFeeForUsage` = 0)
+      |""".stripMargin)
+
+  def partialUpfront = where(
+    """
+      |(`pricing/PurchaseOption` IS NOT NULL AND `pricing/PurchaseOption` = 'Partial Upfront') OR
+      |(`reservation/UpfrontValue` IS NOT null AND `reservation/UpfrontValue` > 0 AND `RecurringFeeForUsage` > 0)
+      |""".stripMargin)
+
+  def noUpfront = where(
+    """
+      |(`pricing/PurchaseOption` IS NOT NULL AND `pricing/PurchaseOption` = 'No Upfront') OR
+      |((`reservation/UpfrontValue` IS null OR `reservation/UpfrontValue` = 0) AND `RecurringFeeForUsage` > 0)
+      |""".stripMargin)
+
+  /**
+    * Helpers to query CUR rows by line item type.
+    */
+  def rowTypeIs(rowType: String) = where(s"`lineItem/LineItemType` = '$rowType'")
+  def summary = rowTypeIs("RIFee")
+  def prepay = rowTypeIs("Fee")
+  def usg = where(s"`lineItem/LineItemType` IN ('Usage', 'DiscountedUsage')")
+
+  /**
+    * Helpers to select columns.
+    */
   def riCols = select(RIColumns: _*)
   def riCostCols: CUR = {
     val cols = List(RICoreColumns, RICostColumns).flatten.distinct
     select(cols: _*)
   }
 
+  /**
+    * Helpers to export query results to files.
+    * Usually for analyzing CURs, we expect to export result to a single file.
+    * It is very slow to export results from a large CUR directly by repartitioning query to 1 partition.
+    * One way to solve it is to write results to multiple parts, read those temp files and then repartition
+    * the dataset into one. The temp result is stored in Parquet format.
+    */
   val TempDFFileName = "tmp-df-file"
   def write(partitionNum: Int = 1): DataFrameWriter[Row] = {
     if (partitionNum == 1) {
@@ -117,6 +175,8 @@ trait CURQueryUtils extends LoggerHelper {
       curRows.repartition(partitionNum).write
     }
   }
-
   def write: DataFrameWriter[Row] = write(1)
+
+  def withAnalysisPoint: CUR = mergeCols("analysisPoint", "product/instanceType", "product/region", "product/tenancy", "product/operatingSystem")
+  def amortCostPerAnalysisPoint: CUR = withAnalysisPoint.aggAfterGroupBy(sum("reservation/AmortizedUpfrontCostForUsage"), "analysisPoint")
 }

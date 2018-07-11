@@ -2,6 +2,7 @@ package com.github.xhanshawn.reader
 
 import com.github.xhanshawn.utils.{CURPartLoader, CURQueryUtils, LoggerHelper}
 import org.apache.spark.sql._
+import org.apache.spark.sql.functions._
 
 case class CUR(curPath: CURPath, curManifest: CURManifest, var curRows: Dataset[Row] = null) extends LoggerHelper with CURQueryUtils {
 
@@ -42,14 +43,5 @@ case class CUR(curPath: CURPath, curManifest: CURManifest, var curRows: Dataset[
     true
   }
 
-  override def where(condition: String): CUR = {
-    log.info(s"added where clause ${condition}")
-    val df = curRows.where(condition)
-    CUR(curPath, curManifest, df)
-  }
-  override def select(cols: String*): CUR = {
-    log.info(s"added select clause ${cols.mkString(", ")}")
-    val df = curRows.select(cols.head, cols.tail :_*)
-    CUR(curPath, curManifest, df)
-  }
+  override def initWithDF(df: DataFrame): CUR = CUR(curPath, curManifest, df)
 }
