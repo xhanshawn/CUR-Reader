@@ -177,17 +177,27 @@ trait CURQueryUtils extends LoggerHelper {
   }
   def write: DataFrameWriter[Row] = write(1)
 
-  def withAnalysisPoint: CUR = {
+  /**
+    * Helper to compose a new column `analysisPoint` from `product/region`, `product/operatingSystem`,
+    * `product/instanceType`, `product/tenancy`
+    * @return
+    */
+  def withAnalysisPoint(delimiter: String): CUR = {
     val composeAnalysisPoint = udf((instType: String,
                                     region: String,
                                     tenancy: String,
-                                    os: String) => Array(instType, region, tenancy, os).mkString(":"))
+                                    os: String) => Array(instType, region, tenancy, os).mkString(delimiter))
     withColumn("analysisPoint", composeAnalysisPoint(
-      col("product/instanceType"),
       col("product/region"),
-      col("product/tenancy"),
-      col("product/operatingSystem")))
+      col("product/instanceType"),
+      col("product/operatingSystem"),
+      col("product/tenancy")))
   }
+  def withAnalysisPoint: CUR = withAnalysisPoint(":")
 
+  /**
+    * Aggregate amortization cost per analysis point.
+    * @return
+    */
   def amortCostPerAnalysisPoint: CUR = withAnalysisPoint.aggAfterGroupBy(sum("reservation/AmortizedUpfrontCostForUsage"), "analysisPoint")
 }
