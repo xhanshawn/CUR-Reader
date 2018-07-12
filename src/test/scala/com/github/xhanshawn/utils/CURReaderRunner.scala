@@ -8,7 +8,8 @@ object CURReaderRunner extends S3Utils {
     val path = args(0)
     val spark = sparkSessionBuilder.build()
     CURReader.config = devConfig
-    val curs = CURReader.read(spark, path)
+    val cur = CURReader.read(spark, path)
+    cur.amortCostPerAnalysisPoint.printRows()
     println()
   }
 }

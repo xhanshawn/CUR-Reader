@@ -4,7 +4,9 @@ import org.apache.spark.sql.SparkSession
 
 trait SparkSessionWrapper {
 
-  lazy val spark: SparkSession = {
+  lazy val spark: SparkSession = build()
+
+  def build(): SparkSession = {
     SparkSession
       .builder()
       .master("local")
@@ -14,7 +16,7 @@ trait SparkSessionWrapper {
 }
 
 object sparkSessionBuilder extends SparkSessionWrapper {
-  def build(): SparkSession = {
+  def getOrBuild(): SparkSession = {
     spark
   }
 }

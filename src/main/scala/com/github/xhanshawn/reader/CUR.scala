@@ -1,9 +1,10 @@
 package com.github.xhanshawn.reader
 
-import com.github.xhanshawn.utils.{CURPartLoader, LoggerHelper}
-import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
+import com.github.xhanshawn.utils.{CURPartLoader, CURQueryUtils, LoggerHelper}
+import org.apache.spark.sql._
+import org.apache.spark.sql.functions._
 
-case class CUR(curPath: CURPath, curManifest: CURManifest) extends LoggerHelper {
+case class CUR(curPath: CURPath, curManifest: CURManifest, var curRows: Dataset[Row] = null) extends LoggerHelper with CURQueryUtils {
 
   val isPathMatching: Boolean = (curPath.reportPrefix == curManifest.reportPrefix)
   val useAWSAPI = curPath.useAWSAPI || runningConfig.usingAWSAPI
@@ -26,9 +27,8 @@ case class CUR(curPath: CURPath, curManifest: CURManifest) extends LoggerHelper 
   val firstPart: Seq[CURPart] = curParts.filter(part => part.reportKey.contains(curManifest.firstPartName))
   val numParts: Int = curParts.length
 
-  private var curRowsDF: DataFrame = null
-
   def loadCurRows(spark: SparkSession): Boolean = {
+    if (curRows != null) return true
     val parts =
       if (runningConfig.readFull) {
         log.warn(s"loading ${curParts.length} CUR part files.")
@@ -39,11 +39,9 @@ case class CUR(curPath: CURPath, curManifest: CURManifest) extends LoggerHelper 
       }
     import spark.implicits._
     val partsDS = spark.createDataset(parts)
-    curRowsDF = CURPartLoader.load(spark, partsDS, useAWSAPI)
+    curRows = CURPartLoader.load(spark, partsDS, useAWSAPI)
     true
   }
 
-  def curRows: DataFrame = {
-    curRowsDF
-  }
+  override def initWithDF(df: DataFrame): CUR = CUR(curPath, curManifest, df)
 }
