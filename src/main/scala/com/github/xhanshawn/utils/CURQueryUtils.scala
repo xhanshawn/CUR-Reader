@@ -130,6 +130,7 @@ trait CURQueryUtils extends LoggerHelper with CURColumnsDefinitions {
     val cols = List(RICoreColumns, RICostColumns).flatten.distinct
     select(cols: _*)
   }
+  def riModelCols = select(RIModelColumns: _*)
 
   /**
     * Helpers to export query results to files.
@@ -139,19 +140,20 @@ trait CURQueryUtils extends LoggerHelper with CURColumnsDefinitions {
     * the dataset into one. The temp result is stored in Parquet format.
     */
   val TempDFFileName = "tmp-df-file"
-  def write(partitionNum: Int = 1): DataFrameWriter[Row] = {
+  def write(dfToWrite: DataFrame, partitionNum: Int = 1): DataFrameWriter[Row] = {
     if (partitionNum == 1) {
       val tempFile = HDFSUtils.getTempFilePath(TempDFFileName).toString
       HDFSUtils.clearTempFile(tempFile)
-      curRows.write.parquet(tempFile)
+      dfToWrite.write.parquet(tempFile)
       val spark = sparkSessionBuilder.build()
       val df = spark.read.parquet(tempFile)
       df.repartition(partitionNum).write
     } else {
-      curRows.repartition(partitionNum).write
+      dfToWrite.repartition(partitionNum).write
     }
   }
-  def write: DataFrameWriter[Row] = write(1)
+  def write: DataFrameWriter[Row] = write(curRows, 1)
+
 
   /**
     * Helper to compose a new column `analysisPoint` from `product/region`, `product/operatingSystem`,
