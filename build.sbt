@@ -1,11 +1,13 @@
 import sbtassembly.AssemblyPlugin.autoImport.ShadeRule
 
+organization := "com.github.xhanshawn"
+
 name := "cur-reader"
 spName := "cur-reader"
 
 version := "0.2.0"
 
-scalaVersion := "2.11.12"
+scalaVersion := "2.11.8"
 
 // set up spark
 sparkVersion := "2.2.0"
@@ -25,7 +27,7 @@ libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.12.2" % "test"
 
 libraryDependencies += "com.github.nscala-time" %% "nscala-time" % "2.16.0"
 
-libraryDependencies += "com.amazonaws" % "aws-java-sdk-s3" % "1.11.82"
+libraryDependencies += "com.amazonaws" % "aws-java-sdk-s3" % "1.11.77"
 libraryDependencies += "org.apache.hadoop" % "hadoop-aws" % "2.7.3"
 
 // Need to shade duplicate name files to assembly a fat jar.

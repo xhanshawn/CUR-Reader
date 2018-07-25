@@ -27,6 +27,12 @@ case class CUR(curPath: CURPath, curManifest: CURManifest, var curRows: Dataset[
   val firstPart: Seq[CURPart] = curParts.filter(part => part.reportKey.contains(curManifest.firstPartName))
   val numParts: Int = curParts.length
 
+  /**
+    * Loads CUR Rows from CUR Parts. If the cache configuration is set to true, it will download all the
+    * CUR parts to temp directory. Be cautious when you call this.
+    * @param spark
+    * @return
+    */
   def loadCurRows(spark: SparkSession): Boolean = {
     if (curRows != null) return true
     val parts =

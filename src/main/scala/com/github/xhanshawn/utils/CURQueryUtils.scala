@@ -5,48 +5,14 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.expressions.UserDefinedFunction
 import org.apache.spark.sql.functions._
 
-trait CURQueryUtils extends LoggerHelper {
-  /**
-    * Contants for common used CUR columns.
-    */
-  val RICoreColumns = List(
-    "reservation/ReservationARN",
-    "reservation/ModificationStatus",
-    "reservation/TotalReservedUnits",
-    "reservation/UnitsPerReservation",
-    "reservation/NumberOfReservations",
-    "reservation/NormalizedUnitsPerReservation",
-    "reservation/StartTime",
-    "reservation/EndTime"
-  )
-  val RICostColumns = List(
-    "reservation/UpfrontValue",
-    "reservation/EffectiveCost",
-    "reservation/RecurringFeeForUsage"
-  )
-  val UnusedRIColumns = List(
-    "reservation/UnusedQuantity",
-    "reservation/UnusedRecurringFee",
-    "reservation/UnusedNormalizedUnitQuantity",
-    "reservation/UnusedAmortizedUpfrontFeeForBillingPeriod"
-  )
-  val AmortizationColumns = List(
-    "reservation/AmortizedUpfrontCostForUsage",
-    "reservation/AmortizedUpfrontFeeForBillingPeriod",
-    "reservation/UnusedAmortizedUpfrontFeeForBillingPeriod",
-    "reservation/UpfrontValue"
-  )
-  val RIColumns = List(
-    RICoreColumns,
-    RICostColumns,
-    UnusedRIColumns,
-    AmortizationColumns).flatten.distinct
+trait CURQueryUtils extends LoggerHelper with CURColumnsDefinitions {
 
   /**
     * Abstract methods to support DataFrame query chaining over CUR case class.
     */
   def curRows: DataFrame
   def initWithDF(df: DataFrame): CUR
+  def rows = curRows /* Sometimes I hate typing  */
   def where(condition: String): CUR = {
     log.info(s"added where clause ${condition}")
     initWithDF(curRows.where(condition))
@@ -68,6 +34,11 @@ trait CURQueryUtils extends LoggerHelper {
     val df = curRows.groupBy(groupCols.map(col): _*).agg(aggExp)
     initWithDF(df)
   }
+  def drop(colNames: String*): CUR = {
+    val df = curRows.drop(colNames: _*)
+    initWithDF(df)
+  }
+
 
   /**
     * Print Spark Sql rows passed in. If the column num is small, we try to print it horizontally.
@@ -116,6 +87,11 @@ trait CURQueryUtils extends LoggerHelper {
   def rds = prodIs("AmazonRDS")
 
   /**
+    * Helpers to query CUR rows by operation and usage type.
+    */
+  def compute = where("`lineItem/Operation` LIKE 'RunInstances%' AND `lineItem/UsageType` LIKE `Usage:`")
+
+  /**
     * Helpers to query CUR rows by reservation types.
     */
   def ri = where("`reservation/ReservationARN` IS NOT null OR `reservation/ReservationARN` <> ''")
@@ -154,6 +130,7 @@ trait CURQueryUtils extends LoggerHelper {
     val cols = List(RICoreColumns, RICostColumns).flatten.distinct
     select(cols: _*)
   }
+  def riModelCols = select(RIModelColumns: _*)
 
   /**
     * Helpers to export query results to files.
@@ -163,19 +140,20 @@ trait CURQueryUtils extends LoggerHelper {
     * the dataset into one. The temp result is stored in Parquet format.
     */
   val TempDFFileName = "tmp-df-file"
-  def write(partitionNum: Int = 1): DataFrameWriter[Row] = {
+  def write(dfToWrite: DataFrame, partitionNum: Int = 1): DataFrameWriter[Row] = {
     if (partitionNum == 1) {
       val tempFile = HDFSUtils.getTempFilePath(TempDFFileName).toString
       HDFSUtils.clearTempFile(tempFile)
-      curRows.write.parquet(tempFile)
+      dfToWrite.write.parquet(tempFile)
       val spark = sparkSessionBuilder.build()
       val df = spark.read.parquet(tempFile)
       df.repartition(partitionNum).write
     } else {
-      curRows.repartition(partitionNum).write
+      dfToWrite.repartition(partitionNum).write
     }
   }
-  def write: DataFrameWriter[Row] = write(1)
+  def write: DataFrameWriter[Row] = write(curRows, 1)
+
 
   /**
     * Helper to compose a new column `analysisPoint` from `product/region`, `product/operatingSystem`,
