@@ -4,9 +4,10 @@ A scala/spark package to load CUR files from AWS S3.
 ## Usage
 
 ### Quick Start
+#### Spark Shell
 Start spark shell with cur-reader fat jar.
 ```$scala
-scala> spark-shell --jars path/to/cur-reader-0.1.3.jar
+scala> spark-shell --jars path/to/cur-reader-<version>.jar
 ```
 Load a CUR from S3.
 
@@ -23,6 +24,34 @@ scala> val cur = CURReader.read(spark, path)
 scala> val rows = cur.curRows // Dataframe for the CUR rows.
 scala> rows.printSchema()
 ```
+#### Include as Dependency
+##### Publish Locally
+One way to include CUR-Reader as your dependency is to publish it locally and then assembly it to the fat jar
+of your project.
+```
+$ sbt compile
+$ sbt package
+$ sbt publishLocal
+[info] Loading global plugins from /Users/foo/.sbt/0.13/plugins
+[info] Loading project definition from /Users/foo/workspace/cur-reader/project
+[info] Set current project to cur-reader (in build file:/Users/foo/workspace/cur-reader/)
+[info] Wrote /Users/foo/workspace/cur-reader/target/scala-2.11/cur-reader_2.11-2.2.0_0.2.0.pom
+[info] :: delivering :: com.github.xhanshawn#cur-reader_2.11;0.2.0 :: 0.2.0 :: release :: Wed Jul 25 21:20:47 UTC 2018
+[info]      delivering ivy file to /Users/foo/workspace/cur-reader/target/scala-2.11/ivy-0.2.0.xml
+[info]      published cur-reader_2.11 to /Users/foo/.ivy2/local/com.github.xhanshawn/cur-reader_2.11/0.2.0/poms/cur-reader_2.11.pom
+[info]      published cur-reader_2.11 to /Users/foo/.ivy2/local/com.github.xhanshawn/cur-reader_2.11/0.2.0/jars/cur-reader_2.11.jar
+[info]      published cur-reader_2.11 to /Users/foo/.ivy2/local/com.github.xhanshawn/cur-reader_2.11/0.2.0/srcs/cur-reader_2.11-sources.jar
+[info]      published cur-reader_2.11 to /Users/foo/.ivy2/local/com.github.xhanshawn/cur-reader_2.11/0.2.0/docs/cur-reader_2.11-javadoc.jar
+[info]      published ivy to /Users/foo/.ivy2/local/com.github.xhanshawn/cur-reader_2.11/0.2.0/ivys/ivy.xml
+```
+Then you need to include it `build.sbt` like
+```
+resolvers += Resolver.file("cur-reader", file(Path.userHome.absolutePath + "/.ivy2/local"))(Resolver.ivyStylePatterns)
+
+libraryDependencies += "com.github.xhanshawn" %% "cur-reader" % "0.2.0"
+```
+
+The source code can be imported in your projected.
 
 ### Query Utils
 
