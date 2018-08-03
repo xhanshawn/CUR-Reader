@@ -20,15 +20,15 @@ spIgnoreProvided := true
 sparkComponents ++= Seq("streaming", "sql")
 
 // Testing
-libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.4" % "test"
-libraryDependencies += "org.scalamock" %% "scalamock" % "4.1.0" % "test"
+libraryDependencies ++= Seq(
+  "com.github.nscala-time" %% "nscala-time" % "2.16.0",
+  "com.amazonaws" % "aws-java-sdk-s3" % "1.11.77",
+  "org.apache.hadoop" % "hadoop-aws" % "2.7.3",
+  "org.scalatest" %% "scalatest" % "3.0.4" % "test",
+  "org.scalamock" %% "scalamock" % "4.1.0" % "test",
+  "org.scalacheck" %% "scalacheck" % "1.12.2" % "test")
 
-libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.12.2" % "test"
-
-libraryDependencies += "com.github.nscala-time" %% "nscala-time" % "2.16.0"
-
-libraryDependencies += "com.amazonaws" % "aws-java-sdk-s3" % "1.11.77"
-libraryDependencies += "org.apache.hadoop" % "hadoop-aws" % "2.7.3"
+scapegoatVersion in ThisBuild := "1.1.0"
 
 // Need to shade duplicate name files to assembly a fat jar.
 assemblyShadeRules in assembly := Seq(

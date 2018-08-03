@@ -79,7 +79,7 @@ object PathUtils extends S3Utils {
       val manifests = findManifestFromPaths(objKeys, curPath)
       manifests.length match {
         case 0 => {
-          log.warn(s"Manifest not found from your path.")
+          log.warn("Manifest not found from your path.")
           null
         }
         case 1 => {

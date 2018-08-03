@@ -23,8 +23,13 @@ trait CURQueryUtils extends LoggerHelper with CURColumnsDefinitions {
   }
   def select(cols: String*): CUR = {
     log.info(s"added select clause ${cols.mkString(", ")}")
-    val df = curRows.select(cols.head, cols.tail :_*)
-    initWithDF(df)
+    cols.headOption match {
+      case Some(headCol) => {
+        val df = curRows.select(headCol, cols.tail :_*)
+        return initWithDF(df)
+      }
+      case _ => throw new IllegalArgumentException("Empty columns list to select")
+    }
   }
   def withColumn(str: String, column: Column): CUR = {
     val df = curRows.withColumn(str, column)
@@ -120,7 +125,7 @@ trait CURQueryUtils extends LoggerHelper with CURColumnsDefinitions {
   def rowTypeIs(rowType: String) = where(s"`lineItem/LineItemType` = '$rowType'")
   def summary = rowTypeIs("RIFee")
   def prepay = rowTypeIs("Fee")
-  def usg = where(s"`lineItem/LineItemType` IN ('Usage', 'DiscountedUsage')")
+  def usg = where("`lineItem/LineItemType` IN ('Usage', 'DiscountedUsage')")
 
   /**
     * Helpers to select columns.

@@ -44,11 +44,15 @@ package object utils {
   }
 
   /**
-    * Transpose a nested Spark Sql Rows.
+    * Transpose a 2D String list.
     * @param rows
     * @return
     */
   def rotate(rows: Seq[Seq[String]]): Seq[Seq[String]] = {
-    rows.head.indices.map(i => rows.map(_(i)))
+    rows.headOption match {
+      case Some(head) => return head.indices.map(i => rows.map(_(i)))
+      case _ => rows
+    }
+
   }
 }
