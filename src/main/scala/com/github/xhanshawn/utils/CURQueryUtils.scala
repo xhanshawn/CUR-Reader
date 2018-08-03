@@ -94,7 +94,7 @@ trait CURQueryUtils extends LoggerHelper with CURColumnsDefinitions {
   /**
     * Helpers to query CUR rows by operation and usage type.
     */
-  def compute = where("`lineItem/Operation` LIKE 'RunInstances%' AND `lineItem/UsageType` LIKE `Usage:`")
+  def compute = where("`lineItem/Operation` LIKE 'RunInstances%' AND `lineItem/UsageType` LIKE '%Usage:%'")
 
   /**
     * Helpers to query CUR rows by reservation types.
