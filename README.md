@@ -76,6 +76,26 @@ scala> cur.ec2.ri.where("column1 = val1")
 
 The basic idea here it to predefine helpers that can be chained on CUR class. More details can be found in com.xhanshawn.reader.CURQUeryUtils
 
+You can also do some complex CUR analysis:
+
+```
+scala> cur.mergeColumns(Seq("lineItem/ProductCode", "product/region", "product/instanceType", "product/operatingSystem", "product/tenancy"),
+             "svcAnalysisPoint", ":")
+          .aggAfterGroupBy(sum("reservation/AmortizedUpfrontCostForUsage"), "svcAnalysisPoint")
+          .where("`sum(reservation/AmortizedUpfrontCostForUsage)` IS NOT NULL")
+          .orderBy("svcAnalysisPoint").print()
+18/08/04 18:28:58 WARN root: Printing out rows from DataFrame query. It can take a long time.
+svcAnalysisPoint                                , sum(reservation/AmortizedUpfrontCostForUsage)
+AmazonEC2:ap-southeast-2:c3.2xlarge:Linux:Shared, 1000.20
+AmazonEC2:ap-southeast-2:c3.4xlarge:Linux:Shared, 374.98651480999956
+AmazonEC2:eu-central-1:r4.2xlarge:Linux:Shared  , 23000.67716936000016
+AmazonRDS:us-east-1:db.m3.2xlarge:null:null     , 333.934303079999985
+AmazonRedshift:us-east-1:dc1.8xlarge:null:null  , 2333.51598505966
+...
+```
+
+Your amortization by service report.
+
 #### Print Rows
 
 To visualize query results, of course you can use `show` to print out Dataset results. But it doesn't look very nice with 100 columns.
