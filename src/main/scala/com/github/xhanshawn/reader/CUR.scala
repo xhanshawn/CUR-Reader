@@ -4,9 +4,9 @@ import com.github.xhanshawn.utils.{CURPartLoader, CURQueryUtils, LoggerHelper}
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
 
-case class CUR(curPath: CURPath, curManifest: CURManifest, var curRows: Dataset[Row] = null) extends LoggerHelper with CURQueryUtils {
+case class CUR(curPath: CURPath, curManifest: CURManifest, var curRows: Dataset[Row]) extends LoggerHelper with CURQueryUtils {
 
-  val isPathMatching: Boolean = (curPath.reportPrefix == curManifest.reportPrefix)
+  val isPathMatching: Boolean = (curPath.reportPrefix == curManifest.reportPrefix.getOrElse(""))
   val useAWSAPI = curPath.useAWSAPI || runningConfig.usingAWSAPI
 
   val isFromS3 = curPath.fromS3
@@ -40,7 +40,7 @@ case class CUR(curPath: CURPath, curManifest: CURManifest, var curRows: Dataset[
         log.warn(s"loading ${curParts.length} CUR part files.")
         curParts
       } else {
-        log.warn(s"readFull config is false. loading the first CUR part file.")
+        log.warn("readFull config is false. loading the first CUR part file.")
         firstPart
       }
     import spark.implicits._
