@@ -39,6 +39,16 @@ trait CURQueryUtils extends LoggerHelper with CURColumnsDefinitions {
     val df = curRows.drop(colNames: _*)
     initWithDF(df)
   }
+  def orderBy(cols: String*): CUR = {
+    log.info(s"added orderBy ${cols.mkString(", ")}")
+    cols.headOption match {
+      case Some(headCol) => {
+        val df = curRows.orderBy(headCol, cols.tail :_*)
+        return initWithDF(df)
+      }
+      case _ => throw new IllegalArgumentException("Empty columns list to orderBy")
+    }
+  }
 
   /**
     * Combined groupBy with agg functions together.
@@ -59,7 +69,7 @@ trait CURQueryUtils extends LoggerHelper with CURColumnsDefinitions {
     * @param f         function to merge the col values.
     * @return
     */
-  def mergeColumns(cols: Seq[String], newCol: String, delimiter: String, f: (Seq[Any], String) => Any): CUR = {
+  def mergeColumns(cols: Seq[String], newCol: String, delimiter: String, f: (Seq[Any], String) => String): CUR = {
     val merge = udf((cols: Seq[Any]) => f(cols, delimiter))
     withColumn(newCol, merge(array(cols.map(col(_)): _*)))
   }
