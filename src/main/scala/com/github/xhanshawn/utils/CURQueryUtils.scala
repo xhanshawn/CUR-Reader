@@ -35,15 +35,45 @@ trait CURQueryUtils extends LoggerHelper with CURColumnsDefinitions {
     val df = curRows.withColumn(str, column)
     initWithDF(df)
   }
-  def aggAfterGroupBy(aggExp: Column, groupCols: String*): CUR = {
-    val df = curRows.groupBy(groupCols.map(col): _*).agg(aggExp)
-    initWithDF(df)
-  }
   def drop(colNames: String*): CUR = {
     val df = curRows.drop(colNames: _*)
     initWithDF(df)
   }
 
+  /**
+    * Combined groupBy with agg functions together.
+    * @param aggExp
+    * @param groupCols
+    * @return
+    */
+  def aggAfterGroupBy(aggExp: Column, groupCols: String*): CUR = {
+    val df = curRows.groupBy(groupCols.map(col): _*).agg(aggExp)
+    initWithDF(df)
+  }
+
+  /**
+    * cool function to merge columns to a new col by mkString with a delimiter.
+    * @param cols      a list of columns you want to merge
+    * @param newCol    the new column name you want to give
+    * @param delimiter the delimiter you want to use to merge the columns.
+    * @param f         function to merge the col values.
+    * @return
+    */
+  def mergeColumns(cols: Seq[String], newCol: String, delimiter: String, f: (Seq[Any], String) => Any): CUR = {
+    val merge = udf((cols: Seq[Any]) => f(cols, delimiter))
+    withColumn(newCol, merge(array(cols.map(col(_)): _*)))
+  }
+
+  /**
+    * Default implementation for the mergeColumns with mkString function.
+    * @param cols
+    * @param newCol
+    * @param delimiter
+    * @return
+    */
+  def mergeColumns(cols: Seq[String], newCol: String, delimiter: String): CUR = {
+    mergeColumns(cols, newCol, delimiter, (cols, delimiter) => cols.mkString(delimiter))
+  }
 
   /**
     * Print Spark Sql rows passed in. If the column num is small, we try to print it horizontally.
@@ -78,6 +108,13 @@ trait CURQueryUtils extends LoggerHelper with CURColumnsDefinitions {
   def printRows(df: DataFrame = curRows): Unit = {
     log.warn("Printing out rows from DataFrame query. It can take a long time.")
     printRows(df.collect(), df)
+  }
+
+  /**
+    * I just don't like long names.
+    */
+  def print(): Unit = {
+    printRows(curRows)
   }
 
   /**
@@ -159,22 +196,14 @@ trait CURQueryUtils extends LoggerHelper with CURColumnsDefinitions {
   }
   def write: DataFrameWriter[Row] = write(curRows, 1)
 
-
   /**
     * Helper to compose a new column `analysisPoint` from `product/region`, `product/operatingSystem`,
     * `product/instanceType`, `product/tenancy`
     * @return
     */
   def withAnalysisPoint(delimiter: String): CUR = {
-    val composeAnalysisPoint = udf((instType: String,
-                                    region: String,
-                                    tenancy: String,
-                                    os: String) => Array(instType, region, tenancy, os).mkString(delimiter))
-    withColumn("analysisPoint", composeAnalysisPoint(
-      col("product/region"),
-      col("product/instanceType"),
-      col("product/operatingSystem"),
-      col("product/tenancy")))
+    mergeColumns(
+      Seq("product/region", "product/instanceType", "product/operatingSystem", "product/tenancy"), "analysisPoint", delimiter)
   }
   def withAnalysisPoint: CUR = withAnalysisPoint(":")
 
