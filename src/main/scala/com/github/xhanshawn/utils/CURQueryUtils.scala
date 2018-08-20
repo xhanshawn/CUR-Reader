@@ -74,6 +74,13 @@ trait CURQueryUtils extends LoggerHelper {
     val df = curRows.limit(n)
     initWithDF(df)
   }
+  def distinct(): CUR = {
+    val df = curRows.distinct
+    initWithDF(df)
+  }
+  def collect(): Array[Row] = {
+    curRows.collect()
+  }
 
 
 
