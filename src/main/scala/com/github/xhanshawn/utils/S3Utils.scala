@@ -83,4 +83,14 @@ trait S3Utils extends LoggerHelper {
     }
     listPerMarker(null, List())
   }
+
+  def copyObjects(srcBucket: String, srcPrefix: String, tarBucket: String, tarPrefix: String): Unit = {
+    val objs = listObjects(srcBucket, srcPrefix)
+    objs.foreach(
+      obj => {
+        val key = obj.getKey
+        s3.copyObject(srcBucket, key, tarBucket, s"${tarPrefix}/${key}")
+      }
+    )
+  }
 }
