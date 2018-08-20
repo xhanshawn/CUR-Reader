@@ -1,6 +1,6 @@
 package com.github.xhanshawn.utils
 
-trait CURColumnsDefinitions {
+object CURColumnsDefinitions {
   /**
     * Contants for common used CUR columns.
     */
@@ -21,7 +21,7 @@ trait CURColumnsDefinitions {
   val RICostColumns = List(
     "reservation/UpfrontValue",
     "reservation/EffectiveCost",
-    "reservation/RecurringFeeForUsage"
+    "lineItem/UnblendedRate"
   )
   val UnusedRIColumns = List(
     "reservation/UnusedQuantity",

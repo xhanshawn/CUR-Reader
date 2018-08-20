@@ -47,6 +47,10 @@ object CURReader extends LoggerHelper {
     else null
   }
 
+  def read(path: String)(implicit spark: SparkSession): CUR = {
+    read(spark, path)
+  }
+
   def clearTempFiles(spark: SparkSession): Unit = {
     HDFSUtils.clearTempFiles(spark)
   }
