@@ -4,8 +4,9 @@ import com.github.xhanshawn.reader.CUR
 import org.apache.spark.sql._
 import org.apache.spark.sql.expressions.UserDefinedFunction
 import org.apache.spark.sql.functions._
+import com.github.xhanshawn.utils.CURColumnsDefinitions._
 
-trait CURQueryUtils extends LoggerHelper with CURColumnsDefinitions {
+trait CURQueryUtils extends LoggerHelper {
 
   /**
     * Abstract methods to support DataFrame query chaining over CUR case class.
@@ -49,6 +50,32 @@ trait CURQueryUtils extends LoggerHelper with CURColumnsDefinitions {
       case _ => throw new IllegalArgumentException("Empty columns list to orderBy")
     }
   }
+
+  /**
+    * Different shows
+    */
+  def show(num: Int, truncate: Boolean): Unit = {
+    curRows.show(num, truncate)
+  }
+  def show(num: Int): Unit = {
+    curRows.show(num)
+  }
+  def show(truncate: Boolean): Unit = {
+    curRows.show(truncate)
+  }
+  def show(): Unit = {
+    curRows.show()
+  }
+
+  def first(): Unit = {
+    curRows.first()
+  }
+  def limit(n: Int = 1): CUR = {
+    val df = curRows.limit(n)
+    initWithDF(df)
+  }
+
+
 
   /**
     * Combined groupBy with agg functions together.
