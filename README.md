@@ -6,8 +6,8 @@ A scala/spark package to load CUR files from AWS S3.
 ### Quick Start
 #### Spark Shell
 Start spark shell with cur-reader fat jar.
-```$scala
-scala> spark-shell --jars path/to/cur-reader-<version>.jar
+```$bash
+$ spark-shell --jars path/to/cur-reader-<version>.jar
 ```
 Load a CUR from S3.
 
