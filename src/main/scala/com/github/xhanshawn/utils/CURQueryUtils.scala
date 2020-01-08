@@ -51,6 +51,37 @@ trait CURQueryUtils extends LoggerHelper with CURColumnsDefinitions {
   }
 
   /**
+    * Different shows
+    */
+  def show(num: Int, truncate: Boolean): Unit = {
+    curRows.show(num, truncate)
+  }
+  def show(num: Int): Unit = {
+    curRows.show(num)
+  }
+  def show(truncate: Boolean): Unit = {
+    curRows.show(truncate)
+  }
+  def show(): Unit = {
+    curRows.show()
+  }
+
+  def first(): Row = {
+    curRows.first()
+  }
+  def limit(n: Int = 1): CUR = {
+    val df = curRows.limit(n)
+    initWithDF(df)
+  }
+  def distinct(): CUR = {
+    val df = curRows.distinct
+    initWithDF(df)
+  }
+  def collect(): Array[Row] = {
+    curRows.collect()
+  }
+
+  /**
     * Combined groupBy with agg functions together.
     * @param aggExp
     * @param groupCols
@@ -115,16 +146,16 @@ trait CURQueryUtils extends LoggerHelper with CURColumnsDefinitions {
     * print Spark Sql rows with member variable curRows.
     * @param df
     */
-  def printRows(df: DataFrame = curRows): Unit = {
+  def printRows(df: DataFrame = curRows, n: Int): Unit = {
     log.warn("Printing out rows from DataFrame query. It can take a long time.")
-    printRows(df.collect(), df)
+    printRows(df.limit(n).collect(), df)
   }
 
   /**
     * I just don't like long names.
     */
-  def print(): Unit = {
-    printRows(curRows)
+  def print(n: Int = 5): Unit = {
+    printRows(curRows, n)
   }
 
   /**
